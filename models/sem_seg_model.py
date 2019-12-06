@@ -76,12 +76,12 @@ class SEM_SEG_Model(Model):
 		)
 
 		self.fp_3 = Pointnet_FP(
-			mlp = [256, 256],
+			mlp = [256, 128],
 			activation = self.activation
 		)
 
 		self.fp_4 = Pointnet_FP(
-			mlp = [256, 256],
+			mlp = [128, 128, 128],
 			activation = self.activation
 		)
 
