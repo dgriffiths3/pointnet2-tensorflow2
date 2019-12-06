@@ -136,7 +136,7 @@ class Pointnet_FP(Layer):
 
 		dist, idx = utils.three_nn(xyz1, xyz2)
 		dist = tf.maximum(dist, 1e-10)
-		norm = tf.reduce_sum((1.0/dist),axis=2,keep_dims=True)
+		norm = tf.reduce_sum((1.0/dist),axis=2, keepdims=True)
 		norm = tf.tile(norm,[1,1,3])
 		weight = (1.0/dist) / norm
 		interpolated_points = utils.three_interpolate(points2, idx, weight)
@@ -150,4 +150,4 @@ class Pointnet_FP(Layer):
 		for i, mlp_layer in enumerate(self.mlp_list):
 			new_points1 = mlp_layer(new_points1)
 
-		return new_points1
+		return tf.squeeze(new_points1)

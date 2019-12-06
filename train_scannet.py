@@ -9,8 +9,7 @@ os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 import numpy as np
 import tensorflow as tf
 
-from models.cls_msg_model import CLS_MSG_Model
-from models.cls_ssg_model import CLS_SSG_Model
+from models.sem_seg_model import SEM_SEG_Model
 from data.dataset import TFDataset
 
 tf.random.set_seed(42)
@@ -43,17 +42,14 @@ def test_step(optimizer, model, loss_object, acc_object, test_pts, test_labels):
 
 def train(config, params):
 
-	if params['msg'] == True:
-		model = CLS_MSG_Model(params['batch_size'], params['num_points'], params['num_classes'])
-	else:
-		model = CLS_SSG_Model(params['batch_size'], params['num_points'], params['num_classes'])
+	model = SEM_SEG_Model(params['batch_size'], params['num_points'], params['num_classes'])
 
 	optimizer = tf.keras.optimizers.Adam(lr=params['lr'])
 	loss_object = tf.keras.losses.SparseCategoricalCrossentropy()
 	acc_object = tf.keras.metrics.SparseCategoricalAccuracy()
 
-	train_ds = TFDataset(os.path.join(config['dataset_dir'], 'train.tfrecord'), params['batch_size'])
-	val_ds = TFDataset(os.path.join(config['dataset_dir'], 'val.tfrecord'), params['batch_size'])
+	train_ds = TFDataset(os.path.join(config['dataset_dir'], 'train.tfrecord'), params['batch_size'], 'scannet')
+	val_ds = TFDataset(os.path.join(config['dataset_dir'], 'val.tfrecord'), params['batch_size'], 'scannet')
 
 	train_summary_writer = tf.summary.create_file_writer(
 		os.path.join(config['log_dir'], config['log_code'])
@@ -98,9 +94,9 @@ def train(config, params):
 if __name__ == '__main__':
 
 	config = {
-		'dataset_dir' : 'data/modelnet',
+		'dataset_dir' : 'data/scannet',
 		'log_dir' : 'logs',
-		'log_code' : 'run_msg',
+		'log_code' : 'scannet_1',
 		'log_freq' : 10,
 		'test_freq' : 100
 	}
@@ -108,9 +104,8 @@ if __name__ == '__main__':
 	params = {
 		'batch_size' : 4,
 		'num_points' : 8192,
-		'num_classes' : 40,
-		'lr' : 0.001,
-		'msg' : True
+		'num_classes' : 21,
+		'lr' : 0.001
 	}
 
 	train(config, params)

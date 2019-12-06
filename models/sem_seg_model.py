@@ -10,15 +10,16 @@ from tensorflow.keras.layers import Dense, Dropout
 from pnet2_layers.layers import Pointnet_SA, Pointnet_FP
 
 
-class CLS_SSG_Model(Model):
+class SEM_SEG_Model(Model):
 
-	def __init__(self, batch_size, num_points, activation=tf.nn.relu):
-		super(CLS_SSG_Model, self).__init__()
+	def __init__(self, batch_size, num_points, num_classes, activation=tf.nn.relu):
+		super(SEM_SEG_Model, self).__init__()
 
 		self.activation = tf.nn.leaky_relu
 		self.batch_size = batch_size
 		self.num_points = num_points
 		self.keep_prob = 0.5
+		self.num_classes = num_classes
 
 		self.kernel_initializer = 'glorot_normal'
 		self.kernel_regularizer = None
@@ -94,7 +95,10 @@ class CLS_SSG_Model(Model):
 
 	def call(self, input):
 
-		l1_xyz, l1_points = self.sa_1(input, None)
+		l0_xyz = input
+		l0_points = None
+
+		l1_xyz, l1_points = self.sa_1(l0_xyz, l0_points)
 		l2_xyz, l2_points = self.sa_2(l1_xyz, l1_points)
 		l3_xyz, l3_points = self.sa_3(l2_xyz, l2_points)
 		l4_xyz, l4_points = self.sa_4(l3_xyz, l3_points)
@@ -104,9 +108,7 @@ class CLS_SSG_Model(Model):
 		l1_points = self.fp_3(l1_xyz, l2_xyz, l1_points, l2_points)
 		l0_points = self.fp_4(l0_xyz, l1_xyz, l0_points, l1_points)
 
-		net = tf.reshape(l0_points, (self.batch_size, -1))
-
-		net = self.dense1(net)
+		net = self.dense1(l0_points)
 		net = self.dropout(net)
 		net = self.dense2(net)
 
