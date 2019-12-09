@@ -11,6 +11,7 @@ import tensorflow as tf
 
 from models.cls_msg_model import CLS_MSG_Model
 from models.cls_ssg_model import CLS_SSG_Model
+from models.cls_basic_model import Pointnet_Model
 from data.dataset import TFDataset
 
 tf.random.set_seed(42)

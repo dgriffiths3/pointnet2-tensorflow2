@@ -56,11 +56,15 @@ class CLS_MSG_Model(Model):
 
 		self.dense1 = Dense(512, activation=self.activation)
 
+		self.dropout1 = Dropout(self.keep_prob)
+
 		self.dense2 = Dense(128, activation=self.activation)
+
+		self.dropout2 = Dropout(self.keep_prob)
 
 		self.dense3 = Dense(self.num_classes, activation=tf.nn.softmax)
 
-		self.dropout = Dropout(self.keep_prob)
+
 
 
 	def call(self, input):
@@ -72,9 +76,9 @@ class CLS_MSG_Model(Model):
 		net = tf.reshape(points, (self.batch_size, -1))
 
 		net = self.dense1(net)
-		net = self.dropout(net)
+		net = self.dropout1(net)
 		net = self.dense2(net)
-		net = self.dropout(net)
-		net = self.dense3(net)
+		net = self.dropout2(net)
+		pred = self.dense3(net)
 
-		return net
+		return pred

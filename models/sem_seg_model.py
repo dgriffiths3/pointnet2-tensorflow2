@@ -88,9 +88,10 @@ class SEM_SEG_Model(Model):
 
 		self.dense1 = Dense(128, activation=self.activation)
 
+		self.dropout1 = Dropout(self.keep_prob)
+
 		self.dense2 = Dense(self.num_classes, activation=tf.nn.softmax)
 
-		self.dropout = Dropout(self.keep_prob)
 
 
 	def call(self, input):
@@ -109,7 +110,7 @@ class SEM_SEG_Model(Model):
 		l0_points = self.fp_4(l0_xyz, l1_xyz, l0_points, l1_points)
 
 		net = self.dense1(l0_points)
-		net = self.dropout(net)
-		net = self.dense2(net)
+		net = self.dropout1(net)
+		pred = self.dense2(net)
 
-		return net
+		return pred
