@@ -12,14 +12,15 @@ from pnet2_layers.layers import Pointnet_SA, Pointnet_FP
 
 class SEM_SEG_Model(Model):
 
-	def __init__(self, batch_size, num_points, num_classes, activation=tf.nn.relu):
+	def __init__(self, batch_size, num_points, num_classes, bn=False, activation=tf.nn.leaky_relu):
 		super(SEM_SEG_Model, self).__init__()
 
-		self.activation = tf.nn.leaky_relu
+		self.activation = activation
 		self.batch_size = batch_size
 		self.num_points = num_points
 		self.keep_prob = 0.5
 		self.num_classes = num_classes
+		self.bn = bn
 
 		self.kernel_initializer = 'glorot_normal'
 		self.kernel_regularizer = None
@@ -35,7 +36,8 @@ class SEM_SEG_Model(Model):
 			nsample=32,
 			mlp=[32, 32, 64],
 			group_all=False,
-			activation=self.activation
+			activation=self.activation,
+			bn = self.bn
 		)
 
 		self.sa_2 = Pointnet_SA(
@@ -44,7 +46,8 @@ class SEM_SEG_Model(Model):
 			nsample=32,
 			mlp=[64, 64, 128],
 			group_all=False,
-			activation=self.activation
+			activation=self.activation,
+			bn = self.bn
 		)
 
 		self.sa_3 = Pointnet_SA(
@@ -53,7 +56,8 @@ class SEM_SEG_Model(Model):
 			nsample=32,
 			mlp=[128, 128, 256],
 			group_all=False,
-			activation=self.activation
+			activation=self.activation,
+			bn = self.bn
 		)
 
 		self.sa_4 = Pointnet_SA(
@@ -62,27 +66,32 @@ class SEM_SEG_Model(Model):
 			nsample=32,
 			mlp=[256, 256, 512],
 			group_all=False,
-			activation=self.activation
+			activation=self.activation,
+			bn = self.bn
 		)
 
 		self.fp_1 = Pointnet_FP(
 			mlp = [256, 256],
-			activation = self.activation
+			activation = self.activation,
+			bn = self.bn
 		)
 
 		self.fp_2 = Pointnet_FP(
 			mlp = [256, 256],
-			activation = self.activation
+			activation = self.activation,
+			bn = self.bn
 		)
 
 		self.fp_3 = Pointnet_FP(
 			mlp = [256, 128],
-			activation = self.activation
+			activation = self.activation,
+			bn = self.bn
 		)
 
 		self.fp_4 = Pointnet_FP(
 			mlp = [128, 128, 128],
-			activation = self.activation
+			activation = self.activation,
+			bn = self.bn
 		)
 
 

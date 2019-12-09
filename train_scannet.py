@@ -42,7 +42,7 @@ def test_step(optimizer, model, loss_object, acc_object, test_pts, test_labels):
 
 def train(config, params):
 
-	model = SEM_SEG_Model(params['batch_size'], params['num_points'], params['num_classes'])
+	model = SEM_SEG_Model(params['batch_size'], params['num_points'], params['num_classes'], params['bn'])
 
 	optimizer = tf.keras.optimizers.Adam(lr=params['lr'])
 	loss_object = tf.keras.losses.SparseCategoricalCrossentropy()
@@ -105,7 +105,8 @@ if __name__ == '__main__':
 		'batch_size' : 4,
 		'num_points' : 8192,
 		'num_classes' : 21,
-		'lr' : 0.001
+		'lr' : 0.001,
+		'bn' : True
 	}
 
 	train(config, params)

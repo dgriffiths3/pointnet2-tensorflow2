@@ -77,8 +77,6 @@ By default this runs the multi-scale grouping modules. To run the standard set a
 
 ## Notes
 
-This implementation does not currently support batch normalisation. The reason for this is that I don't use it personally, so didn't originally implement it when making these layers for my own research. I will implement it soon.
-
 All examples in this repository are using custom training loops and models. This is purely because this is how I use tensorflow. I have not tested these with the high level `Sequential` api, but have no reason to believe it wouldn't work, so if it doesn't, please let me know. I would be happy to add an example model script here if someone makes one.
 
 I will create a model and train script for part segmentation as soon as I find time.

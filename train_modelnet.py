@@ -45,9 +45,9 @@ def test_step(optimizer, model, loss_object, acc_object, test_pts, test_labels):
 def train(config, params):
 
 	if params['msg'] == True:
-		model = CLS_MSG_Model(params['batch_size'], params['num_points'], params['num_classes'])
+		model = CLS_MSG_Model(params['batch_size'], params['num_points'], params['num_classes'], params['bn'])
 	else:
-		model = CLS_SSG_Model(params['batch_size'], params['num_points'], params['num_classes'])
+		model = CLS_SSG_Model(params['batch_size'], params['num_points'], params['num_classes'], params['bn'])
 
 	optimizer = tf.keras.optimizers.Adam(lr=params['lr'])
 	loss_object = tf.keras.losses.SparseCategoricalCrossentropy()
@@ -107,11 +107,12 @@ if __name__ == '__main__':
 	}
 
 	params = {
-		'batch_size' : 4,
+		'batch_size' : 2,
 		'num_points' : 8192,
 		'num_classes' : 40,
 		'lr' : 0.001,
-		'msg' : True
+		'msg' : False,
+		'bn' : True
 	}
 
 	train(config, params)

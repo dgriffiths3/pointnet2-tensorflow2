@@ -3,7 +3,7 @@ import sys
 import numpy as np
 import tensorflow as tf
 
-from tensorflow.keras.layers import MaxPool1D, Layer
+from tensorflow.keras.layers import MaxPool1D, Layer, BatchNormalization
 
 from .cpp_modules import (
 	farthest_point_sample,
@@ -59,7 +59,7 @@ def sample_and_group_all(xyz, points, use_xyz=True):
 
 class Conv2d(Layer):
 
-	def __init__(self, filters, strides=[1, 1], activation=tf.nn.relu, padding='VALID', initializer='glorot_normal'):
+	def __init__(self, filters, strides=[1, 1], activation=tf.nn.relu, padding='VALID', initializer='glorot_normal', bn=False):
 		super(Conv2d, self).__init__()
 
 		self.filters = filters
@@ -67,6 +67,7 @@ class Conv2d(Layer):
 		self.activation = activation
 		self.padding = padding
 		self.initializer = initializer
+		self.bn = bn
 
 	def build(self, input_shape):
 
@@ -77,11 +78,15 @@ class Conv2d(Layer):
 			name='pnet_conv'
 		)
 
+		if self.bn: self.bn_layer = BatchNormalization()
+
 		super(Conv2d, self).build(input_shape)
 
 	def call(self, inputs):
 
 		points = tf.nn.conv2d(inputs, filters=self.w, strides=self.strides, padding=self.padding)
+
+		if self.bn: points = self.bn_layer(points)
 
 		if self.activation: points = self.activation(points)
 

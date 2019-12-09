@@ -12,13 +12,14 @@ from pnet2_layers.layers import Pointnet_SA, Pointnet_SA_MSG
 
 class CLS_SSG_Model(Model):
 
-	def __init__(self, batch_size, num_points, num_classes, activation=tf.nn.relu):
+	def __init__(self, batch_size, num_points, num_classes, bn=False, activation=tf.nn.leaky_relu):
 		super(CLS_SSG_Model, self).__init__()
 
-		self.activation = tf.nn.leaky_relu
+		self.activation = activation
 		self.batch_size = batch_size
 		self.num_points = num_points
 		self.num_classes = num_classes
+		self.bn = bn
 		self.keep_prob = 0.5
 
 		self.kernel_initializer = 'glorot_normal'
@@ -35,7 +36,8 @@ class CLS_SSG_Model(Model):
 			nsample=32,
 			mlp=[64, 64, 128],
 			group_all=False,
-			activation=self.activation
+			activation=self.activation,
+			bn = self.bn
 		)
 
 		self.layer2 = Pointnet_SA(
@@ -44,7 +46,8 @@ class CLS_SSG_Model(Model):
 			nsample=64,
 			mlp=[128, 128, 256],
 			group_all=False,
-			activation=self.activation
+			activation=self.activation,
+			bn = self.bn
 		)
 
 		self.layer3 = Pointnet_SA(
@@ -53,7 +56,8 @@ class CLS_SSG_Model(Model):
 			nsample=None,
 			mlp=[256, 512, 1024],
 			group_all=True,
-			activation=self.activation
+			activation=self.activation,
+			bn = self.bn
 		)
 
 		self.dense1 = Dense(512, activation=self.activation)
