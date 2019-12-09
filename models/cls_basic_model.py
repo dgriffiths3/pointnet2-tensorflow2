@@ -119,28 +119,28 @@ class Pointnet_Model(Model):
 	def call(self, input, training=True):
 
 		net = self.mlp1(input)
-		if training == True and self.bn == True: net = self.bn1(net)
+		if training == True and self.bn == True: net = self.bn1(net, training=training)
 
 		net = self.mlp2(net)
-		if training == True and self.bn == True: net = self.bn2(net)
+		if training == True and self.bn == True: net = self.bn2(net, training=training)
 
 		net = self.mlp3(net)
-		if training == True and self.bn == True: net = self.bn3(net)
+		if training == True and self.bn == True: net = self.bn3(net, training=training)
 
 		net = self.mlp4(net)
-		if training == True and self.bn == True: net = self.bn4(net)
+		if training == True and self.bn == True: net = self.bn4(net, training=training)
 
 		net = self.mlp5(net)
-		if training == True and self.bn == True: net = self.bn5(net)
+		if training == True and self.bn == True: net = self.bn5(net, training=training)
 
 		net = self.maxpool(net)
 		net = tf.reshape(net, (self.batch_size, -1))
 
 		net = self.dense1(net)
-		if training == True and self.bn == True: net = self.bn6(net)
+		if training == True and self.bn == True: net = self.bn6(net, training=training)
 
 		net = self.dense2(net)
-		if training == True and self.bn == True: net = self.bn7(net)
+		if training == True and self.bn == True: net = self.bn7(net, training=training)
 
 		net = self.dropout1(net)
 

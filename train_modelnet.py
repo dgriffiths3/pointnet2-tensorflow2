@@ -49,6 +49,10 @@ def train(config, params):
 	else:
 		model = CLS_SSG_Model(params['batch_size'], params['num_points'], params['num_classes'], params['bn'])
 
+	model.build(input_shape=(params['batch_size'], params['num_points'], 3))
+	print(model.summary())
+	print('[info] model training...')
+
 	optimizer = tf.keras.optimizers.Adam(lr=params['lr'])
 	loss_object = tf.keras.losses.SparseCategoricalCrossentropy()
 	acc_object = tf.keras.metrics.SparseCategoricalAccuracy()
@@ -101,18 +105,18 @@ if __name__ == '__main__':
 	config = {
 		'dataset_dir' : 'data/modelnet',
 		'log_dir' : 'logs',
-		'log_code' : 'run_msg',
+		'log_code' : 'run_ssg',
 		'log_freq' : 10,
 		'test_freq' : 100
 	}
 
 	params = {
-		'batch_size' : 2,
+		'batch_size' : 4,
 		'num_points' : 8192,
 		'num_classes' : 40,
 		'lr' : 0.001,
 		'msg' : False,
-		'bn' : True
+		'bn' : False
 	}
 
 	train(config, params)

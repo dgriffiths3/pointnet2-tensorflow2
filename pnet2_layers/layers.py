@@ -31,7 +31,7 @@ class Pointnet_SA(Layer):
 
 		super(Pointnet_SA, self).build(input_shape)
 
-	def call(self, xyz, points):
+	def call(self, xyz, points, training=True):
 
 		if self.group_all:
 			nsample = xyz.get_shape()[1]
@@ -48,7 +48,7 @@ class Pointnet_SA(Layer):
 			)
 
 		for i, mlp_layer in enumerate(self.mlp_list):
-			new_points = mlp_layer(new_points)
+			new_points = mlp_layer(new_points, training=training)
 
 		new_points = tf.math.reduce_max(new_points, axis=2, keepdims=True)
 
@@ -83,7 +83,7 @@ class Pointnet_SA_MSG(Layer):
 
 		super(Pointnet_SA_MSG, self).build(input_shape)
 
-	def call(self, xyz, points):
+	def call(self, xyz, points, training=True):
 
 		new_xyz = utils.gather_point(xyz, utils.farthest_point_sample(self.npoint, xyz))
 
@@ -104,7 +104,7 @@ class Pointnet_SA_MSG(Layer):
 				grouped_points = grouped_xyz
 
 			for i, mlp_layer in enumerate(self.mlp_list[i]):
-				grouped_points = mlp_layer(grouped_points)
+				grouped_points = mlp_layer(grouped_points, training=training)
 
 			new_points = tf.math.reduce_max(grouped_points, axis=2)
 			new_points_list.append(new_points)
@@ -135,7 +135,7 @@ class Pointnet_FP(Layer):
 			self.mlp_list.append(utils.Conv2d(n_filters, activation=self.activation, bn=self.bn))
 		super(Pointnet_FP, self).build(input_shape)
 
-	def call(self, xyz1, xyz2, points1, points2):
+	def call(self, xyz1, xyz2, points1, points2, training=True):
 
 		dist, idx = utils.three_nn(xyz1, xyz2)
 		dist = tf.maximum(dist, 1e-10)
@@ -151,6 +151,6 @@ class Pointnet_FP(Layer):
 		new_points1 = tf.expand_dims(new_points1, 2)
 
 		for i, mlp_layer in enumerate(self.mlp_list):
-			new_points1 = mlp_layer(new_points1)
+			new_points1 = mlp_layer(new_points1, training=training)
 
 		return tf.squeeze(new_points1)

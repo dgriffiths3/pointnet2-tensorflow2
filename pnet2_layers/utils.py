@@ -82,11 +82,11 @@ class Conv2d(Layer):
 
 		super(Conv2d, self).build(input_shape)
 
-	def call(self, inputs):
+	def call(self, inputs, training=True):
 
 		points = tf.nn.conv2d(inputs, filters=self.w, strides=self.strides, padding=self.padding)
 
-		if self.bn: points = self.bn_layer(points)
+		if self.bn: points = self.bn_layer(points, training=training)
 
 		if self.activation: points = self.activation(points)
 

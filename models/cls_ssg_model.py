@@ -5,7 +5,7 @@ sys.path.insert(0, './')
 
 import tensorflow as tf
 from tensorflow.keras import Model
-from tensorflow.keras.layers import Dense, Dropout
+from tensorflow.keras.layers import Dense, Dropout, BatchNormalization
 
 from pnet2_layers.layers import Pointnet_SA, Pointnet_SA_MSG
 
@@ -61,10 +61,12 @@ class CLS_SSG_Model(Model):
 		)
 
 		self.dense1 = Dense(512, activation=self.activation)
+		if self.bn: self.bn_fc1 = BatchNormalization()
 
 		self.dropout1 = Dropout(self.keep_prob)
 
 		self.dense2 = Dense(128, activation=self.activation)
+		if self.bn: self.bn_fc2 = BatchNormalization()
 
 		self.dropout2 = Dropout(self.keep_prob)
 
@@ -72,18 +74,22 @@ class CLS_SSG_Model(Model):
 
 
 
-	def call(self, input):
+	def call(self, input, training=True):
 
-		xyz, points = self.layer1(input, None)
-		xyz, points = self.layer2(xyz, points)
-		xyz, points = self.layer3(xyz, points)
+		xyz, points = self.layer1(input, None, training=training)
+		xyz, points = self.layer2(xyz, points, training=training)
+		xyz, points = self.layer3(xyz, points, training=training)
 
 		net = tf.reshape(points, (self.batch_size, -1))
 
 		net = self.dense1(net)
+		if self.bn: net = self.bn_fc1(net, training=training)
 		net = self.dropout1(net)
+
 		net = self.dense2(net)
+		if self.bn: net = self.bn_fc2(net, training=training)
 		net = self.dropout2(net)
+
 		pred = self.dense3(net)
 
 		return pred

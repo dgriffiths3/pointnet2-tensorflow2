@@ -77,6 +77,8 @@ By default this runs the multi-scale grouping modules. To run the standard set a
 
 ## Notes
 
+I have implemented (batch normalization)[https://towardsdatascience.com/batch-normalization-in-neural-networks-1ac91516821c] for all pointnet++ layers in the model files. I personally find I get better results on real world datasets when this option is set to `False`. In the original implementation this batch normalization is set to `True`.
+
 All examples in this repository are using custom training loops and models. This is purely because this is how I use tensorflow. I have not tested these with the high level `Sequential` api, but have no reason to believe it wouldn't work, so if it doesn't, please let me know. I would be happy to add an example model script here if someone makes one.
 
 I will create a model and train script for part segmentation as soon as I find time.
