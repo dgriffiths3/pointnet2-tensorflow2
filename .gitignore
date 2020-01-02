@@ -3,3 +3,5 @@ logs/
 .DS_Store*
 *.pyc
 __pycache__/
+*.so
+*.cu.o
