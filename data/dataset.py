@@ -17,11 +17,11 @@ class TFDataset():
 
 	def read_tfrecord(self, path, batch_size):
 
-		dataset = tf.data.TFRecordDataset(path).batch(batch_size)
+		dataset = tf.data.TFRecordDataset(path).shuffle(self.shuffle_buffer).batch(batch_size)
 		if self.dataset_type == 'modelnet':
-			dataset = dataset.map(self.extract_modelnet_fn).shuffle(self.shuffle_buffer)
+			dataset = dataset.map(self.extract_modelnet_fn)
 		elif self.dataset_type == 'scannet':
-			dataset = dataset.map(self.extract_scannet_fn).shuffle(self.shuffle_buffer)
+			dataset = dataset.map(self.extract_scannet_fn)
 
 		return dataset
 
