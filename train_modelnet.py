@@ -17,29 +17,33 @@ from data.dataset import TFDataset
 tf.random.set_seed(42)
 
 
-def train_step(optimizer, model, loss_object, acc_object, train_pts, train_labels):
+def train_step(optimizer, model, loss_object, train_loss, train_acc, train_pts, train_labels):
 
 	with tf.GradientTape() as tape:
 
 		pred = model(train_pts)
 		loss = loss_object(train_labels, pred)
-		acc = acc_object(train_labels, pred)
+
+	train_loss.update_state([loss])
+	train_acc.update_state(train_labels, pred)
 
 	gradients = tape.gradient(loss, model.trainable_variables)
 	optimizer.apply_gradients(zip(gradients, model.trainable_variables))
 
-	return loss, acc
+	return train_loss, train_acc
 
 
-def test_step(optimizer, model, loss_object, acc_object, test_pts, test_labels):
+def test_step(optimizer, model, loss_object, test_loss, test_acc, test_pts, test_labels):
 
 	with tf.GradientTape() as tape:
 
 		pred = model(test_pts)
 		loss = loss_object(test_labels, pred)
-		acc = acc_object(test_labels, pred)
 
-	return loss, acc
+	test_loss.update_state([loss])
+	test_acc.update_state(test_labels, pred)
+
+	return test_loss, test_acc
 
 
 def train(config, params):
@@ -55,49 +59,61 @@ def train(config, params):
 
 	optimizer = tf.keras.optimizers.Adam(lr=params['lr'])
 	loss_object = tf.keras.losses.SparseCategoricalCrossentropy()
-	acc_object = tf.keras.metrics.SparseCategoricalAccuracy()
+
+	train_loss = tf.keras.metrics.Mean()
+	test_loss = tf.keras.metrics.Mean()
+	train_acc = tf.keras.metrics.SparseCategoricalAccuracy()
+	test_acc = tf.keras.metrics.SparseCategoricalAccuracy()
 
 	train_ds = TFDataset(os.path.join(config['dataset_dir'], 'train.tfrecord'), params['batch_size'])
 	val_ds = TFDataset(os.path.join(config['dataset_dir'], 'val.tfrecord'), params['batch_size'])
 
 	train_summary_writer = tf.summary.create_file_writer(
-		os.path.join(config['log_dir'], config['log_code'])
+		os.path.join(config['log_dir'], config['log_code'], 'train')
 	)
 
-	with train_summary_writer.as_default():
+	test_summary_writer = tf.summary.create_file_writer(
+		os.path.join(config['log_dir'], config['log_code'], 'test')
+	)
 
-		while True:
+	while True:
 
-			train_pts, train_labels = train_ds.get_batch()
+		train_pts, train_labels = train_ds.get_batch()
 
-			loss, acc = train_step(
+		loss, train_acc = train_step(
+			optimizer,
+			model,
+			loss_object,
+			train_loss,
+			train_acc,
+			train_pts,
+			train_labels
+		)
+
+		with train_summary_writer.as_default():
+
+			if optimizer.iterations % config['log_freq'] == 0:
+				tf.summary.scalar('loss', train_loss.result(), step=optimizer.iterations)
+				tf.summary.scalar('accuracy', train_acc.result(), step=optimizer.iterations)
+
+		if optimizer.iterations % config['test_freq'] == 0:
+
+			test_pts, test_labels = val_ds.get_batch()
+
+			test_loss, test_acc = test_step(
 				optimizer,
 				model,
 				loss_object,
-				acc_object,
-				train_pts,
-				train_labels
+				test_loss,
+				test_acc,
+				test_pts,
+				test_labels
 			)
 
-			if optimizer.iterations % config['log_freq'] == 0:
-				tf.summary.scalar('train loss', loss, step=optimizer.iterations)
-				tf.summary.scalar('train accuracy', acc, step=optimizer.iterations)
+			with test_summary_writer.as_default():
 
-			if optimizer.iterations % config['test_freq'] == 0:
-
-				test_pts, test_labels = val_ds.get_batch()
-
-				test_loss, test_acc = test_step(
-					optimizer,
-					model,
-					loss_object,
-					acc_object,
-					test_pts,
-					test_labels
-				)
-
-				tf.summary.scalar('test loss', test_loss, step=optimizer.iterations)
-				tf.summary.scalar('test accuracy', test_acc, step=optimizer.iterations)
+				tf.summary.scalar('loss', test_loss.result(), step=optimizer.iterations)
+				tf.summary.scalar('accuracy', test_acc.result(), step=optimizer.iterations)
 
 
 if __name__ == '__main__':
@@ -105,7 +121,7 @@ if __name__ == '__main__':
 	config = {
 		'dataset_dir' : 'data/modelnet',
 		'log_dir' : 'logs',
-		'log_code' : 'run_ssg',
+		'log_code' : 'ssg_1',
 		'log_freq' : 10,
 		'test_freq' : 100
 	}
