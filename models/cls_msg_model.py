@@ -12,7 +12,7 @@ from pnet2_layers.layers import Pointnet_SA, Pointnet_SA_MSG
 
 class CLS_MSG_Model(Model):
 
-	def __init__(self, batch_size, num_points, num_classes, bn=False, activation=tf.nn.leaky_relu):
+	def __init__(self, batch_size, num_points, num_classes, bn=False, activation=tf.nn.relu):
 		super(CLS_MSG_Model, self).__init__()
 
 		self.activation = activation

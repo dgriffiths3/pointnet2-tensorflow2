@@ -82,3 +82,5 @@ I have implemented [batch normalization](https://towardsdatascience.com/batch-no
 All examples in this repository are using custom training loops and models. This is purely because this is how I use tensorflow. I have not tested these with the high level `Sequential` api, but have no reason to believe it wouldn't work, so if it doesn't, please let me know. I would be happy to add an example model script here if someone makes one.
 
 I will create a model and train script for part segmentation as soon as I find time.
+
+If you use this repository and find any bugs please submit an issue so I can fix them for anyone else using the code.

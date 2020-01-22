@@ -21,7 +21,7 @@ from tensorflow.keras.layers import (
 
 class Pointnet_Model(Model):
 
-	def __init__(self, batch_size, num_points, num_classes, bn=False, activation=tf.nn.leaky_relu):
+	def __init__(self, batch_size, num_points, num_classes, bn=False, activation=tf.nn.relu):
 		super(Pointnet_Model, self).__init__()
 
 		self.activation = activation

@@ -12,7 +12,7 @@ from pnet2_layers.layers import Pointnet_SA, Pointnet_FP
 
 class SEM_SEG_Model(Model):
 
-	def __init__(self, batch_size, num_points, num_classes, bn=False, activation=tf.nn.leaky_relu):
+	def __init__(self, batch_size, num_points, num_classes, bn=False, activation=tf.nn.relu):
 		super(SEM_SEG_Model, self).__init__()
 
 		self.activation = activation
