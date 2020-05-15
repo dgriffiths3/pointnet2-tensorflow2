@@ -62,7 +62,7 @@ def train():
 
 	callbacks = [
 		keras.callbacks.EarlyStopping(
-			'val_sparse_categorical_accuracy', min_delta=0.1, patience=3),
+			'val_sparse_categorical_accuracy', min_delta=0.01, patience=10),
 		keras.callbacks.TensorBoard(
 			'./logs/{}'.format(config['log_dir']), update_freq=50),
 		keras.callbacks.ModelCheckpoint(
@@ -81,7 +81,7 @@ def train():
 	model.fit(
 		train_ds,
 		validation_data = val_ds,
-		validation_steps = 10,
+		validation_steps = 20,
 		validation_freq = 1,
 		callbacks = callbacks,
 		epochs = 100,
