@@ -12,12 +12,11 @@ from pnet2_layers.layers import Pointnet_SA, Pointnet_SA_MSG
 
 class CLS_SSG_Model(Model):
 
-	def __init__(self, batch_size, num_points, num_classes, bn=False, activation=tf.nn.relu):
+	def __init__(self, batch_size, num_classes, bn=False, activation=tf.nn.relu):
 		super(CLS_SSG_Model, self).__init__()
 
 		self.activation = activation
 		self.batch_size = batch_size
-		self.num_points = num_points
 		self.num_classes = num_classes
 		self.bn = bn
 		self.keep_prob = 0.5
@@ -31,8 +30,7 @@ class CLS_SSG_Model(Model):
 	def init_network(self):
 
 		self.layer1 = Pointnet_SA(
-			npoint=512,
-			radius=0.2,
+			npoint=512, radius=0.2,
 			nsample=32,
 			mlp=[64, 64, 128],
 			group_all=False,
@@ -61,20 +59,15 @@ class CLS_SSG_Model(Model):
 		)
 
 		self.dense1 = Dense(512, activation=self.activation)
-		if self.bn: self.bn_fc1 = BatchNormalization()
-
 		self.dropout1 = Dropout(self.keep_prob)
 
 		self.dense2 = Dense(128, activation=self.activation)
-		if self.bn: self.bn_fc2 = BatchNormalization()
-
 		self.dropout2 = Dropout(self.keep_prob)
 
 		self.dense3 = Dense(self.num_classes, activation=tf.nn.softmax)
 
 
-
-	def call(self, input, training=True):
+	def forward_pass(self, input, training):
 
 		xyz, points = self.layer1(input, None, training=training)
 		xyz, points = self.layer2(xyz, points, training=training)
@@ -83,13 +76,42 @@ class CLS_SSG_Model(Model):
 		net = tf.reshape(points, (self.batch_size, -1))
 
 		net = self.dense1(net)
-		if self.bn: net = self.bn_fc1(net, training=training)
 		net = self.dropout1(net)
 
 		net = self.dense2(net)
-		if self.bn: net = self.bn_fc2(net, training=training)
 		net = self.dropout2(net)
 
 		pred = self.dense3(net)
 
 		return pred
+
+
+	def train_step(self, input):
+
+		with tf.GradientTape() as tape:
+
+			pred = self.forward_pass(input[0], True)
+			loss = self.compiled_loss(input[1], pred)
+		
+		gradients = tape.gradient(loss, self.trainable_variables)
+		self.optimizer.apply_gradients(
+			zip(gradients, self.trainable_variables))
+
+		self.compiled_metrics.update_state(input[1], pred)
+
+		return {m.name: m.result() for m in self.metrics}
+
+
+	def test_step(self, input):
+
+		pred = self.forward_pass(input[0], False)
+		loss = self.compiled_loss(input[1], pred)
+
+		self.compiled_metrics.update_state(input[1], pred)
+
+		return {m.name: m.result() for m in self.metrics}
+
+
+	def call(self, input, training=False):
+
+		return self.forward_pass(input, training)

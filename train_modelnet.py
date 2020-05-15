@@ -6,133 +6,100 @@ sys.path.insert(0, './')
 
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 
-import numpy as np
 import tensorflow as tf
+from tensorflow import keras
 
 from models.cls_msg_model import CLS_MSG_Model
 from models.cls_ssg_model import CLS_SSG_Model
-from models.cls_basic_model import Pointnet_Model
-from data.dataset import TFDataset
 
-tf.random.set_seed(42)
+tf.random.set_seed(1234)
 
 
-def train_step(optimizer, model, loss_object, train_loss, train_acc, train_pts, train_labels):
+def load_dataset(in_file, batch_size):
 
-	with tf.GradientTape() as tape:
+	assert os.path.isfile(in_file), '[error] dataset path not found'
 
-		pred = model(train_pts)
-		loss = loss_object(train_labels, pred)
+	n_points = 8192
+	shuffle_buffer = 1000
 
-	train_loss.update_state([loss])
-	train_acc.update_state(train_labels, pred)
+	def _extract_fn(data_record):
 
-	gradients = tape.gradient(loss, model.trainable_variables)
-	optimizer.apply_gradients(zip(gradients, model.trainable_variables))
+		in_features = {
+			'points': tf.io.FixedLenFeature([n_points * 3], tf.float32),
+			'label': tf.io.FixedLenFeature([1], tf.int64)
+		}
 
-	return train_loss, train_acc
+		return tf.io.parse_single_example(data_record, in_features)
+
+	def _preprocess_fn(sample):
+
+		points = sample['points']
+		label = sample['label']
+
+		points = tf.reshape(points, (n_points, 3))
+		points = tf.random.shuffle(points)
+
+		return points, label
+
+	dataset = tf.data.TFRecordDataset(in_file)
+	dataset = dataset.shuffle(shuffle_buffer)
+	dataset = dataset.map(_extract_fn)
+	dataset = dataset.map(_preprocess_fn)
+	dataset = dataset.batch(batch_size, drop_remainder=True)
+
+	return dataset
 
 
-def test_step(optimizer, model, loss_object, test_loss, test_acc, test_pts, test_labels):
+def train():
 
-	with tf.GradientTape() as tape:
-
-		pred = model(test_pts)
-		loss = loss_object(test_labels, pred)
-
-	test_loss.update_state([loss])
-	test_acc.update_state(test_labels, pred)
-
-	return test_loss, test_acc
-
-
-def train(config, params):
-
-	if params['msg'] == True:
-		model = CLS_MSG_Model(params['batch_size'], params['num_points'], params['num_classes'], params['bn'])
+	if config['msg'] == True:
+		model = CLS_MSG_Model(config['batch_size'], config['num_classes'], config['bn'])
 	else:
-		model = CLS_SSG_Model(params['batch_size'], params['num_points'], params['num_classes'], params['bn'])
+		model = CLS_SSG_Model(config['batch_size'], config['num_classes'], config['bn'])
 
-	model.build(input_shape=(params['batch_size'], params['num_points'], 3))
+	train_ds = load_dataset(config['train_ds'], config['batch_size'])
+	val_ds = load_dataset(config['val_ds'], config['batch_size'])
+
+	callbacks = [
+		keras.callbacks.EarlyStopping(
+			'val_sparse_categorical_accuracy', min_delta=0.1, patience=3),
+		keras.callbacks.TensorBoard(
+			'./logs/{}'.format(config['log_dir']), update_freq=50),
+		keras.callbacks.ModelCheckpoint(
+			'./logs/{}/model/weights.ckpt'.format(config['log_dir']), 'val_sparse_categorical_accuracy', save_best_only=True)
+	]
+
+	model.build(input_shape=(config['batch_size'], 8192, 3))
 	print(model.summary())
-	print('[info] model training...')
 
-	optimizer = tf.keras.optimizers.Adam(lr=params['lr'])
-	loss_object = tf.keras.losses.SparseCategoricalCrossentropy()
-
-	train_loss = tf.keras.metrics.Mean()
-	test_loss = tf.keras.metrics.Mean()
-	train_acc = tf.keras.metrics.SparseCategoricalAccuracy()
-	test_acc = tf.keras.metrics.SparseCategoricalAccuracy()
-
-	train_ds = TFDataset(os.path.join(config['dataset_dir'], 'train.tfrecord'), params['batch_size'])
-	val_ds = TFDataset(os.path.join(config['dataset_dir'], 'val.tfrecord'), params['batch_size'])
-
-	train_summary_writer = tf.summary.create_file_writer(
-		os.path.join(config['log_dir'], config['log_code'], 'train')
+	model.compile(
+		optimizer=keras.optimizers.Adam(config['lr']),
+		loss=keras.losses.SparseCategoricalCrossentropy(),
+		metrics=[keras.metrics.SparseCategoricalAccuracy()]
 	)
 
-	test_summary_writer = tf.summary.create_file_writer(
-		os.path.join(config['log_dir'], config['log_code'], 'test')
+	model.fit(
+		train_ds,
+		validation_data = val_ds,
+		validation_steps = 10,
+		validation_freq = 1,
+		callbacks = callbacks,
+		epochs = 100,
+		verbose = 1
 	)
-
-	while True:
-
-		train_pts, train_labels = train_ds.get_batch()
-
-		loss, train_acc = train_step(
-			optimizer,
-			model,
-			loss_object,
-			train_loss,
-			train_acc,
-			train_pts,
-			train_labels
-		)
-
-		with train_summary_writer.as_default():
-
-			if optimizer.iterations % config['log_freq'] == 0:
-				tf.summary.scalar('loss', train_loss.result(), step=optimizer.iterations)
-				tf.summary.scalar('accuracy', train_acc.result(), step=optimizer.iterations)
-
-		if optimizer.iterations % config['test_freq'] == 0:
-
-			test_pts, test_labels = val_ds.get_batch()
-
-			test_loss, test_acc = test_step(
-				optimizer,
-				model,
-				loss_object,
-				test_loss,
-				test_acc,
-				test_pts,
-				test_labels
-			)
-
-			with test_summary_writer.as_default():
-
-				tf.summary.scalar('loss', test_loss.result(), step=optimizer.iterations)
-				tf.summary.scalar('accuracy', test_acc.result(), step=optimizer.iterations)
 
 
 if __name__ == '__main__':
 
 	config = {
-		'dataset_dir' : 'data/modelnet',
-		'log_dir' : 'logs',
-		'log_code' : 'ssg_1',
-		'log_freq' : 10,
-		'test_freq' : 100
-	}
-
-	params = {
+		'train_ds' : 'data/modelnet_train.tfrecord',
+		'val_ds' : 'data/modelnet_val.tfrecord',
+		'log_dir' : 'msg_1',
 		'batch_size' : 4,
-		'num_points' : 8192,
-		'num_classes' : 40,
 		'lr' : 0.001,
-		'msg' : False,
+		'num_classes' : 40,
+		'msg' : True,
 		'bn' : False
 	}
 
-	train(config, params)
+	train()

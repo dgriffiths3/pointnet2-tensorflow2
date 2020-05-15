@@ -12,12 +12,11 @@ from pnet2_layers.layers import Pointnet_SA, Pointnet_FP
 
 class SEM_SEG_Model(Model):
 
-	def __init__(self, batch_size, num_points, num_classes, bn=False, activation=tf.nn.relu):
+	def __init__(self, batch_size, num_classes, bn=False, activation=tf.nn.relu):
 		super(SEM_SEG_Model, self).__init__()
 
 		self.activation = activation
 		self.batch_size = batch_size
-		self.num_points = num_points
 		self.keep_prob = 0.5
 		self.num_classes = num_classes
 		self.bn = bn
@@ -102,8 +101,7 @@ class SEM_SEG_Model(Model):
 		self.dense2 = Dense(self.num_classes, activation=tf.nn.softmax)
 
 
-
-	def call(self, input, training=True):
+	def forward_pass(self, input, training):
 
 		l0_xyz = input
 		l0_points = None
@@ -123,3 +121,34 @@ class SEM_SEG_Model(Model):
 		pred = self.dense2(net)
 
 		return pred
+
+
+	def train_step(self, input):
+
+		with tf.GradientTape() as tape:
+
+			pred = self.forward_pass(input[0], True)
+			loss = self.compiled_loss(input[1], pred)
+		
+		gradients = tape.gradient(loss, self.trainable_variables)
+		self.optimizer.apply_gradients(zip(gradients, self.trainable_variables))
+
+		self.compiled_metrics.update_state(input[1], pred)
+
+		return {m.name: m.result() for m in self.metrics}
+
+
+	def test_step(self, input):
+
+		pred = self.forward_pass(input[0], False)
+		loss = self.compiled_loss(input[1], pred)
+
+		self.compiled_metrics.update_state(input[1], pred)
+
+		return {m.name: m.result() for m in self.metrics}
+
+
+	def call(self, input, training=False):
+
+		return self.forward_pass(input, training)
+
